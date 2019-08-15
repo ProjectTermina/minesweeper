@@ -2,14 +2,16 @@ extern "C" {
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 }
 #include "game.hpp"
 #include <cmath>
 #include <cctype>
-#include <iostream>
 
-#define USAGE_STRING "Usage:\n\t./ms [args]\n[-d density]:	floating point between 0.0 and 1.0\n[-w width]:	width of grid\n[-h height]:	height of grid\n"
+#define USAGE_STRING "Usage:\n\t./ms [args]\n\
+	[-d density]:	floating point between 0.0 and 1.0\n\
+	[-w width]:	width of grid\n\
+	[-h height]:	height of grid\n\
+	[width height]:	can be provided in order without -w or -h\n\n"
 
 static WINDOW *header, *game, *separator, *rules;
 
@@ -60,8 +62,39 @@ q: quit");
 
 void print_usage_and_exit() {
 	endwin();
-	std::cerr << USAGE_STRING;
+	fprintf(stderr, USAGE_STRING);
 	exit(1);
+}
+
+Game parse_args(int argc, char **argv) {
+	size_t width, height;
+	double density;
+	int w_manual = 0;
+	int h_manual = 0;
+	for (size_t i = 1; argv[i] != NULL; i++) {
+		if (strcmp("-d", argv[i]) == 0) {
+			if (argv[i+1] == NULL) print_usage_and_exit();
+			density = strtod(argv[++i], NULL);
+			if (density >= 1.0) print_usage_and_exit();
+		} else if (strcmp("-w", argv[i]) == 0) {
+			if (argv[i+1] == NULL) print_usage_and_exit();
+			w_manual = 1;
+			width = strtol(argv[++i], NULL, 0);
+		} else if (strcmp("-h", argv[i]) == 0) {
+			if (argv[i+1] == NULL) print_usage_and_exit();
+			h_manual = 1;
+			height = strtol(argv[++i], NULL, 0);
+		} /*else if (!w_manual && !h_manual) {
+			if (argv[i+1] == NULL) print_usage_and_exit();
+			b.width = strtol(argv[i], NULL, 0);
+			b.height = strtol(argv[++i], NULL, 0);
+		}*/
+	}
+	if ((w_manual || h_manual) && (height == 0 || width == 0)) print_usage_and_exit();
+	if (height == 0) height = 15;
+	if (width == 0) width = 15;
+	if (density == 0) density = 0.12;
+	return Game(width, height, density);
 }
 
 void print_board(const Game &g) {
@@ -83,41 +116,8 @@ void print_board(const Game &g) {
 	}
 }
 
-extern char *optarg;
-extern int optind, opterr, optopt;
-
 int main(int argc, char **argv) {
-
-	size_t width = 0;
-	size_t height = 0;
-	double density = 0.0;
-	const char *optstring = "w:h:d:";
-	bool some_values_set = false;
-	bool density_set = false;
-
-	while (int i = getopt(argc, argv, optstring)) {
-		if (i == 'w') {
-			width = atoi(optarg);
-		} else if (i == 'h') {
-			height = atoi(optarg);
-		} else if (i == 'd') {
-			density_set = true;
-			density = atof(optarg);
-		} else if (i == -1) {
-			break;
-		} else {
-			print_usage_and_exit();
-		}
-		some_values_set = true;
-	}
-
-	if (some_values_set && (width == 0 || height == 0 || !density_set)) {
-		print_usage_and_exit();
-	}
-
-	Game game_state;
-	if (some_values_set) game_state = Game(width, height, density);
-
+	Game game_state = parse_args(argc, argv);
 	initialize_windows(game_state);
 	int i = 0;
 	while (game_state.is_running()) {
