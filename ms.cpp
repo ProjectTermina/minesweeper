@@ -166,5 +166,4 @@ int main(int argc, char **argv) {
 
 	}
 	endwin();
-	printf("%d, %d\n", LINES, COLS);
 }
