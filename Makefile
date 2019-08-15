@@ -1,5 +1,5 @@
 COMPILER=clang++
-CFLAGS=-lncurses -lm --debug -ggdb
+CFLAGS=-Wno-c++17-extensions -lncurses -lm --debug -ggdb
 EXE=mscpp
 SOURCE=ms.cpp game.cpp
 
