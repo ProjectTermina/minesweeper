@@ -39,13 +39,13 @@ void initialize_windows(Game g) {
 	separator = newwin(LINES, 2, 0, horizontal_divider + 1);
 	rules	= newwin(LINES, horizontal_divider - 2, 0, horizontal_divider + 3);
 	keypad(game, TRUE);
-	
 	mvwprintw(header, 0, 0, "ProjectTermina's Minesweeper");
 	mvwprintw(header, 1, 0, "~*~*~*~*~*~*~*~*~*~*~*~*~*~*");
 	mvwprintw(rules, 0, 0, "\n`, ', f, F: flag a cell\n\n\
 SPACEBAR, c, C: clear a cell\n\n\
 arrow keys, hjkl, wasd: move\n\n\
-q: quit");
+q: quit\n\n");
+
 	for (int i = 0; i < LINES; i++) {
 		waddch(separator, ACS_VLINE);
 		waddch(separator, ' ');
@@ -81,45 +81,20 @@ void print_board(const Game &g) {
 		}
 		waddch(game, ' ');
 	}
+	mvwprintw(header, 0, 0, "ProjectTermina's Minesweeper");
+	mvwprintw(header, 1, 0, "~*~*~*~*~*~*~*~*~*~*~*~*~*~*");
+	mvwprintw(rules, 0, 0, "\n`, ', f, F: flag a cell\n\n\
+SPACEBAR, c, C: clear a cell\n\n\
+arrow keys, hjkl, wasd: move\n\n\
+q: quit\n\n");
+	wrefresh(game);
+	if (!g.is_ongoing()) {
+		wprintw(rules, "Want to play again?\n\
+Press 'n' to start a new game.");
+		wrefresh(rules);
+	}
 }
-
-extern char *optarg;
-extern int optind, opterr, optopt;
-
-int main(int argc, char **argv) {
-
-	size_t width = 0;
-	size_t height = 0;
-	double density = 0.0;
-	const char *optstring = "w:h:d:";
-	bool some_values_set = false;
-	bool density_set = false;
-
-	while (int i = getopt(argc, argv, optstring)) {
-		if (i == 'w') {
-			width = atoi(optarg);
-		} else if (i == 'h') {
-			height = atoi(optarg);
-		} else if (i == 'd') {
-			density_set = true;
-			density = atof(optarg);
-		} else if (i == -1) {
-			break;
-		} else {
-			print_usage_and_exit();
-		}
-		some_values_set = true;
-	}
-
-	if (some_values_set && (width == 0 || height == 0 || !density_set)) {
-		print_usage_and_exit();
-	}
-
-	Game game_state;
-	if (some_values_set) game_state = Game(width, height, density);
-
-	initialize_windows(game_state);
-	int i = 0;
+bool play_game(Game& game_state) {
 	while (game_state.is_running()) {
 		print_board(game_state);
 		wmove(game, game_state.get_y(), 2*game_state.get_x());
@@ -160,10 +135,57 @@ int main(int argc, char **argv) {
 				game_state.cursor_clear(); break;
 			case 'q':
 			case 'Q':
-				game_state.quit();
-				break;
+				game_state.quit(); return false;
+			case 'n':
+				return true;
 		}
+	}
+	return false;
+}
 
+extern char *optarg;
+extern int optind, opterr, optopt;
+
+int main(int argc, char **argv) {
+
+	size_t width = 0;
+	size_t height = 0;
+	double density = 0.0;
+	const char *optstring = "w:h:d:";
+	bool some_values_set = false;
+	bool density_set = false;
+
+	while (int i = getopt(argc, argv, optstring)) {
+		if (i == 'w') {
+			width = atoi(optarg);
+		} else if (i == 'h') {
+			height = atoi(optarg);
+		} else if (i == 'd') {
+			density_set = true;
+			density = atof(optarg);
+		} else if (i == -1) {
+			break;
+		} else {
+			print_usage_and_exit();
+		}
+		some_values_set = true;
+	}
+
+	if (some_values_set && (width == 0 || height == 0 || !density_set)) {
+		print_usage_and_exit();
+	}
+
+
+	Game game_state = Game();
+	if (some_values_set) game_state = Game(width, height, density);
+
+	initialize_windows(game_state);
+
+	while (play_game(game_state)) {
+		Game game_state = Game();
+		if (some_values_set) game_state = Game(width, height, density);
 	}
 	endwin();
 }
+
+
