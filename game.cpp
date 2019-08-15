@@ -75,6 +75,7 @@ size_t Game::get_width() const {return width;}
 size_t Game::get_height() const {return height;}
 
 bool Game::is_running() const {return running;}
+bool Game::is_ongoing() const {return ongoing;}
 
 std::stringstream Game::status() const {
 	using std::stringstream;

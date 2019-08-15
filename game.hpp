@@ -59,6 +59,7 @@ public:
 	size_t get_width() const;
 	size_t get_height() const;
 	bool is_running() const;
+	bool is_ongoing() const;
 	std::stringstream status() const;
 
 	void cursor_up();
