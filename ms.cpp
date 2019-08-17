@@ -87,11 +87,13 @@ void print_board(const Game &g) {
 	// reprint other windows
 	mvwprintw(header, 0, 0, "ProjectTermina's Minesweeper");
 	mvwprintw(header, 1, 0, "~*~*~*~*~*~*~*~*~*~*~*~*~*~*");
+	wclear(rules);
 	mvwprintw(rules, 0, 0, "\n`, ', f, F: flag a cell\n\n\
 SPACEBAR, c, C: clear a cell\n\n\
 arrow keys, hjkl, wasd: move\n\n\
 q: quit\n\n");
 	wrefresh(game);
+	wrefresh(rules);
 	if (!g.is_ongoing()) {
 		wprintw(rules, "Want to play again?\n\
 Press 'n' to start a new game.");
@@ -189,7 +191,7 @@ int main(int argc, char **argv) {
 	initialize_windows(game_state);
 	
 	while (play_game(game_state)) {
-		Game game_state = Game();
+		game_state = Game();
 		if (some_values_set) game_state = Game(width, height, density);
 	}
 	endwin();
