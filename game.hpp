@@ -14,7 +14,7 @@ struct Cell {
 	bool mine = false;
 };
 
-using Coord = pair<size_t, size_t>;
+using Coord = pair<int, int>;
 
 namespace std{
 template<>
@@ -26,19 +26,23 @@ struct std::less<Coord> {
 	}
 };
 }
-map<Coord, Cell> build_board(size_t width, size_t height, double density);
+
 
 class Game {
 private:
-	size_t width;
-	size_t height;
+	int width;
+	int height;
+	double density;
+	bool is_board_initialized = false;
 	map<Coord, Cell> board;
 	Coord current;
 	bool ongoing;
 	bool running;
 
-	size_t &x();
-	size_t &y();
+	int &x();
+	int &y();
+
+	map<Coord, Cell> build_board(int width, int height, double density, Coord c);
 
 	size_t mines_adjacent(Coord coord) const;
 	void reveal(Coord coord);
@@ -46,18 +50,16 @@ private:
 	vector<Coord> get_adjacent(Coord c) const;
 
 public:
-	Game() :width(15), height(15), 
-		board(build_board(15, 15, .20)), current({7, 7}),
-		ongoing(true), running(true) {}
-	Game(size_t width, size_t height, double density = .20) : 
-		width(width), height(height),
-		board(build_board(width, height, density)),
+	Game() :width(15), height(15), density(.20),
+		current({7, 7}), ongoing(true), running(true) {}
+	Game(int width, int height, double density = .20) : 
+		width(width), height(height), density(density),
 		current({width/2, height/2}), ongoing(true), running(true) {}
 
-	size_t get_x() const;
-	size_t get_y() const;
-	size_t get_width() const;
-	size_t get_height() const;
+	int get_x() const;
+	int get_y() const;
+	int get_width() const;
+	int get_height() const;
 	bool is_running() const;
 	bool is_ongoing() const;
 	std::stringstream status() const;

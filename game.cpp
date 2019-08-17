@@ -15,64 +15,74 @@ using std::pair;
 vector<Coord> Game::get_adjacent(Coord c) const {
 	
 	auto [x, y] = c;
-	vector<Coord> potentials;
-	potentials.push_back(Coord{x-1, y-1});
-	potentials.push_back(Coord{x-1, y});
-	potentials.push_back(Coord{x-1, y+1});
-	potentials.push_back(Coord{x, y-1});
-	potentials.push_back(Coord{x, y+1});
-	potentials.push_back(Coord{x+1, y-1});
-	potentials.push_back(Coord{x+1, y});
-	potentials.push_back(Coord{x+1, y+1});
-	vector<Coord> result;
-	copy_if(potentials.begin(), potentials.end(),
-		back_inserter(result), [this](Coord c) {
-			size_t x = c.first;
-			size_t y = c.second;
-			return ( x < this->get_width() && y < this->get_height() );
-		});
-	return result;
+
+	// vector of coords adjacent to c
+	vector<Coord> adjacent_points;
+	adjacent_points.push_back(Coord{x-1, y-1});
+	adjacent_points.push_back(Coord{x-1, y});
+	adjacent_points.push_back(Coord{x-1, y+1});
+	adjacent_points.push_back(Coord{x, y-1});
+	adjacent_points.push_back(Coord{x, y+1});
+	adjacent_points.push_back(Coord{x+1, y-1});
+	adjacent_points.push_back(Coord{x+1, y});
+	adjacent_points.push_back(Coord{x+1, y+1});
+
+	// vector of valid subset of adjacent_points
+	vector<Coord> valid_adjacent_points;
+	copy_if(adjacent_points.begin(), adjacent_points.end(),
+		back_inserter(valid_adjacent_points), [this](Coord c) {
+			return this->is_valid(c);
+	});
+	return valid_adjacent_points;
 }
 
 
-map<Coord, Cell> build_board(size_t width, size_t height, double density) {
-	std::mt19937 rand;	// initializing functor named rand
+map<Coord, Cell> Game::build_board(int width, int height, double density, Coord c) {
+	// Initializing Mersenne Twister
+	std::mt19937 rand;
 	rand.seed(std::time(nullptr));
-	map<Coord, Cell> result;
 
-	size_t mined = 0;
+	// Initializing board map
+	map<Coord, Cell> result;
 	for (int w = 0; w < width; ++w) {
 		for (int h = 0; h < height; ++h) {
 			result[Coord(w, h)];
 		}
-	 }
+	}
+
+	// Off-limits squares for mines
+	auto safe = get_adjacent(c);
+
+	// Putting mines on board map
+	size_t mined = 0;
 	while (mined < density * width * height) {
 		Coord coord = {rand() % width, rand() % height};
 		Cell& cell = result[coord];
-		if (!cell.mine) {
+		if (!cell.mine && find(safe.begin(), safe.end(), coord) == safe.end()) {
 			cell.mine = true;
 			++mined;
 		}
 	}
+
 	return result;
 }
 
 size_t Game::mines_adjacent(Coord coord) const {
 	vector<Coord> adj = get_adjacent(coord);
-	size_t mines = count_if(adj.begin(), adj.end(),
-		[this](Coord c){/*lambda*/return this->board.at(c).mine;}
-	);
+	size_t mines = count_if(adj.begin(), adj.end(), [this](Coord c) {
+		/*lambda*/return this->board.at(c).mine;
+	});
 	return mines;
 }
 
-size_t &Game::x() {return current.first;}
-size_t &Game::y() {return current.second;}
+int &Game::x() {return current.first;}
+int &Game::y() {return current.second;}
 
-size_t Game::get_x() const {return current.first;}
-size_t Game::get_y() const {return current.second;}
+int Game::get_x() const {return current.first;}
+int Game::get_y() const {return current.second;}
 
-size_t Game::get_width() const {return width;}
-size_t Game::get_height() const {return height;}
+int Game::get_width() const {return width;}
+int Game::get_height() const {return height;}
 
 bool Game::is_running() const {return running;}
 bool Game::is_ongoing() const {return ongoing;}
@@ -80,8 +90,9 @@ bool Game::is_ongoing() const {return ongoing;}
 std::stringstream Game::status() const {
 	using std::stringstream;
 	stringstream s;
-	
-	for (auto [coord, cell] : board) {
+
+	// if board is initialized, print it
+	if (is_board_initialized) for (auto [coord, cell] : board) {
 		if (cell.revealed) {
 			size_t mines = mines_adjacent(coord);
 			if (cell.mine) s << '*';
@@ -89,12 +100,15 @@ std::stringstream Game::status() const {
 			else s << ' ';
 		} else if (cell.flagged) s << '#';
 		else s << '=';
-	}
+	// if board is not initialized, print empty board
+	} else for (int i = 0; i < width * height; ++i) s << '=';
+
 	return s;
 }
 
 bool Game::is_valid(Coord c) const {
-	return c.first < width && c.second < height;
+	return c.first < width && c.second < height && \
+		c.first >= 0 && c.second >= 0;
 }
 
 void Game::cursor_up() {
@@ -117,22 +131,33 @@ void Game::cursor_clear() {
 	reveal(current);
 }
 void Game::reveal(Coord coord) {
-	if (is_valid(coord)) {
+	if (!is_valid(coord)) return;
+
+	// Build board that gives the player a fair start
+	while (!is_board_initialized) {
+		board = build_board(width, height, density, coord);
 		Cell& cell = board[coord];
-		if (cell.flagged || cell.revealed) return;
-
-		cell.revealed = true;
-		if (cell.mine) {
-			game_over();
-			return;
+		if (!cell.mine ){//&& !mines_adjacent(coord)) {
+			is_board_initialized = true;
 		}
+	}
 
-		if (!mines_adjacent(coord)) {
-			for (Coord c : get_adjacent(coord)) {
-				reveal(c);
-			}
+	Cell& cell = board[coord];
+
+	// Do nothing if flagged or revealed
+	if (cell.flagged || cell.revealed) return;
+
+	cell.revealed = true;
+	if (cell.mine) {
+		game_over();
+		return;
+	}
+
+	if (!mines_adjacent(coord)) {
+		for (Coord c : get_adjacent(coord)) {
+			reveal(c);
 		}
-	} else return;
+	}
 }
 
 void Game::game_over() {

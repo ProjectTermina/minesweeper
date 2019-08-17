@@ -28,7 +28,6 @@ void initialize_windows(Game g) {
 		init_pair(7, COLOR_BLACK, 0);
 		init_pair(8, COLOR_WHITE, 0);
 	}
-	keypad(game, TRUE);
 	noecho();	// user input does not display on screen
 	cbreak();	// buffering does not wait for newline
 
@@ -44,6 +43,7 @@ void initialize_windows(Game g) {
 	game	= newwin(height, width, header_height + 1, board_margin);
 	separator = newwin(LINES, 2, 0, horizontal_divider + 1);
 	rules	= newwin(LINES, horizontal_divider - 2, 0, horizontal_divider + 3);
+	keypad(game, TRUE);
 
 	// Print initial text to windows
 	mvwprintw(header, 0, 0, "ProjectTermina's Minesweeper");
@@ -142,7 +142,7 @@ bool play_game(Game& game_state) {
 			case 'Q':
 				game_state.quit(); return false;
 			case 'n':
-				return true;
+				if (!game_state.is_ongoing()) return true;
 		}
 	}
 	return false;
