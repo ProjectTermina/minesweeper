@@ -14,6 +14,8 @@ extern "C" {
 static WINDOW *header, *game, *separator, *rules;
 
 void initialize_windows(Game g) {
+
+	// Initialize ncurses
 	initscr();
 	if (has_colors() == TRUE) {
 		start_color();
@@ -26,25 +28,30 @@ void initialize_windows(Game g) {
 		init_pair(7, COLOR_BLACK, 0);
 		init_pair(8, COLOR_WHITE, 0);
 	}
+	keypad(game, TRUE);
+	noecho();	// user input does not display on screen
+	cbreak();	// buffering does not wait for newline
 
-	size_t width = g.get_width() * 2 ;
-	size_t height = g.get_height();
+	// Constants for window dimensions
+	const size_t width = g.get_width() * 2 ;
+	const size_t height = g.get_height();
+	const size_t header_height = 2;
+	const size_t horizontal_divider = std::floor(COLS/2.0);
+	const size_t board_margin = (horizontal_divider - width) / 2;
 
-	size_t header_height = 2;
-	size_t horizontal_divider = std::floor(COLS/2.0);
-	size_t board_margin = (horizontal_divider - width) / 2;
+	// Initialize ncurses windows
 	header	= newwin(header_height, horizontal_divider, 0, 0);
 	game	= newwin(height, width, header_height + 1, board_margin);
 	separator = newwin(LINES, 2, 0, horizontal_divider + 1);
 	rules	= newwin(LINES, horizontal_divider - 2, 0, horizontal_divider + 3);
-	keypad(game, TRUE);
+
+	// Print initial text to windows
 	mvwprintw(header, 0, 0, "ProjectTermina's Minesweeper");
 	mvwprintw(header, 1, 0, "~*~*~*~*~*~*~*~*~*~*~*~*~*~*");
 	mvwprintw(rules, 0, 0, "\n`, ', f, F: flag a cell\n\n\
 SPACEBAR, c, C: clear a cell\n\n\
 arrow keys, hjkl, wasd: move\n\n\
 q: quit\n\n");
-
 	for (int i = 0; i < LINES; i++) {
 		waddch(separator, ACS_VLINE);
 		waddch(separator, ' ');
@@ -52,9 +59,6 @@ q: quit\n\n");
 	wrefresh(header);
 	wrefresh(rules);
 	wrefresh(separator);
-
-	noecho();	// user input does not display on screen
-	cbreak();	// buffering does not wait for newline
 }
 
 void print_usage_and_exit() {
@@ -64,9 +68,9 @@ void print_usage_and_exit() {
 }
 
 void print_board(const Game &g) {
-	wmove(game, 0, 0);
 	std::stringstream s = g.status();
-	//mvwaddstr(game, 0, 0, s.data());
+	wmove(game, 0, 0);
+	// print each character individually, with color if needed
 	for (char c : s.str()) {
 		if (std::isdigit(c)) {
 			attr_t old_attr;
@@ -80,6 +84,7 @@ void print_board(const Game &g) {
 		}
 		waddch(game, ' ');
 	}
+	// reprint other windows
 	mvwprintw(header, 0, 0, "ProjectTermina's Minesweeper");
 	mvwprintw(header, 1, 0, "~*~*~*~*~*~*~*~*~*~*~*~*~*~*");
 	mvwprintw(rules, 0, 0, "\n`, ', f, F: flag a cell\n\n\
@@ -93,6 +98,7 @@ Press 'n' to start a new game.");
 		wrefresh(rules);
 	}
 }
+
 bool play_game(Game& game_state) {
 	while (game_state.is_running()) {
 		print_board(game_state);
@@ -147,6 +153,7 @@ extern int optind, opterr, optopt;
 
 int main(int argc, char **argv) {
 
+	// Initialization
 	size_t width = 0;
 	size_t height = 0;
 	double density = 0.0;
@@ -154,6 +161,7 @@ int main(int argc, char **argv) {
 	bool some_values_set = false;
 	bool density_set = false;
 
+	// Iterate through args
 	while (int i = getopt(argc, argv, optstring)) {
 		if (i == 'w') {
 			width = atoi(optarg);
@@ -170,6 +178,7 @@ int main(int argc, char **argv) {
 		some_values_set = true;
 	}
 
+	// Check valid parameters
 	if (some_values_set && (width == 0 || height == 0 || !density_set)) {
 		print_usage_and_exit();
 	}
@@ -177,9 +186,8 @@ int main(int argc, char **argv) {
 
 	Game game_state = Game();
 	if (some_values_set) game_state = Game(width, height, density);
-
 	initialize_windows(game_state);
-
+	
 	while (play_game(game_state)) {
 		Game game_state = Game();
 		if (some_values_set) game_state = Game(width, height, density);
