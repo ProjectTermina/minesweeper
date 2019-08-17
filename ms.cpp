@@ -15,7 +15,6 @@ static WINDOW *header, *game, *separator, *rules;
 
 void initialize_windows(Game g) {
 	initscr();
-	int c = can_change_color() == TRUE;
 	if (has_colors() == TRUE) {
 		start_color();
 		init_pair(1, COLOR_CYAN, 0);
