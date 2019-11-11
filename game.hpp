@@ -35,8 +35,11 @@ private:
 	double density;
 	bool is_board_initialized = false;
 	map<Coord, Cell> board;
+	int num_mines;
+	int cells_revealed;
 	Coord current;
 	bool ongoing;
+	bool won;
 	bool running;
 
 	int &x();
@@ -62,6 +65,7 @@ public:
 	int get_height() const;
 	bool is_running() const;
 	bool is_ongoing() const;
+	bool is_won() const;
 	std::stringstream status() const;
 
 	void cursor_up();
@@ -71,5 +75,6 @@ public:
 	void cursor_flag();
 	void cursor_clear();
 	void game_over();
+	void win();
 	void quit();
 };

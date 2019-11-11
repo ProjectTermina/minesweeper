@@ -54,16 +54,16 @@ map<Coord, Cell> Game::build_board(int width, int height, double density, Coord 
 	auto safe = get_adjacent(c);
 
 	// Putting mines on board map
-	size_t mined = 0;
-	while (mined < density * width * height) {
+	num_mines = 0;
+	while (num_mines < density * width * height) {
 		Coord coord = {rand() % width, rand() % height};
 		Cell& cell = result[coord];
 		if (!cell.mine && find(safe.begin(), safe.end(), coord) == safe.end()) {
 			cell.mine = true;
-			++mined;
+			++num_mines;
 		}
 	}
-
+	
 	return result;
 }
 
@@ -86,6 +86,7 @@ int Game::get_height() const {return height;}
 
 bool Game::is_running() const {return running;}
 bool Game::is_ongoing() const {return ongoing;}
+bool Game::is_won() const {return won;}
 
 std::stringstream Game::status() const {
 	using std::stringstream;
@@ -148,10 +149,13 @@ void Game::reveal(Coord coord) {
 	if (cell.flagged || cell.revealed) return;
 
 	cell.revealed = true;
+	++cells_revealed;
 	if (cell.mine) {
 		game_over();
 		return;
 	}
+	
+	if (cells_revealed == width * height - num_mines) win();
 
 	if (!mines_adjacent(coord)) {
 		for (Coord c : get_adjacent(coord)) {
@@ -165,6 +169,11 @@ void Game::game_over() {
 		cell.revealed = true;
 	}
 	ongoing = false;
+}
+
+void Game::win() {
+	ongoing = false;
+	won = true;
 }
 
 void Game::quit() {
