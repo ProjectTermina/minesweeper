@@ -9,7 +9,7 @@ extern "C" {
 #include <cctype>
 #include <iostream>
 
-#define USAGE_STRING "Usage:\n\t./ms [args]\n[-d density]:	floating point between 0.0 and 1.0\n[-w width]:	width of grid\n[-h height]:	height of grid\n"
+#define USAGE_STRING "Usage:\n\t./ms [args]\n[-d density]:	floating point between 0.0 and 1.0 (default .20)\n[-w width]:	width of grid (default 15)\n[-h height]:	height of grid (default 15)\n"
 
 static WINDOW *header, *game, *separator, *rules;
 
